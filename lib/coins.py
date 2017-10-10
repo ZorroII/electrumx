@@ -842,7 +842,7 @@ class SuperSkynet(Coin):
     NAME = "SuperSkynet"
     SHORTNAME = "SSN"
     NET = "mainnet"
-    P2PKH_VERBYTE = bytes.fromhex("19")
+    P2PKH_VERBYTE = bytes.fromhex("3f")
     P2SH_VERBYTES = [bytes.fromhex("55")]
     WIF_BYTE = bytes.fromhex("99")
     GENESIS_HASH = ('00000bb4674a7aea871240253ddeaf3e'
