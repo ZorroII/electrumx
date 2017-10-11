@@ -393,12 +393,7 @@ class BitcoinCashTestnet(BitcoinTestnetMixin, Coin):
     '''Bitcoin Testnet for Bitcoin Cash daemons.'''
     NAME = "BitcoinCash"
     PEERS = [
-        'electrum.akinbo.org s t',
-        'he36kyperp3kbuxu.onion s t',
-        'electrum-btc-testnet.petrkr.net s t',
-        'testnet.hsmiths.com t53011',
-        'hsmithsxurybd7uh.onion t53011 s53012',
-        'ELEX05.blackpole.online t52001 s52002',
+        'electrum-testnet-abc.criptolayer.net s50112',
     ]
 
 
@@ -406,6 +401,13 @@ class BitcoinSegwitTestnet(BitcoinTestnetMixin, Coin):
     '''Bitcoin Testnet for Core bitcoind >= 0.13.1.'''
     NAME = "BitcoinSegwit"
     DESERIALIZER = DeserializerSegWit
+    PEERS = [
+        'electrum.akinbo.org s t',
+        'he36kyperp3kbuxu.onion s t',
+        'testnet.hsmiths.com t53011 s53012',
+        'hsmithsxurybd7uh.onion t53011 s53012',
+        'testnetnode.arihanc.com s t',
+    ]
 
 
 class BitcoinSegwitRegtest(BitcoinSegwitTestnet):
@@ -792,9 +794,10 @@ class Einsteinium(Coin):
     NET = "mainnet"
     P2PKH_VERBYTE = bytes.fromhex("21")
     P2SH_VERBYTES = [bytes.fromhex("05")]
-    WIF_BYTE = bytes.fromhex("a1")
+    WIF_BYTE = bytes.fromhex("b0")
     GENESIS_HASH = ('4e56204bb7b8ac06f860ff1c845f03f9'
                     '84303b5b97eb7b42868f714611aed94b')
+    DESERIALIZER = DeserializerSegWit
     TX_COUNT = 2087559
     TX_COUNT_HEIGHT = 1358517
     TX_PER_BLOCK = 2
@@ -985,6 +988,7 @@ class Monacoin(Coin):
         'electrumx.tamami-foundation.org s t',
         'electrumx1.movsign.info t',
         'electrumx2.movsign.info t',
+        'electrum-mona.bitbank.cc s t',
     ]
 
 
@@ -1076,4 +1080,26 @@ class Bitzeny(Coin):
     TX_COUNT_HEIGHT = 10000
     TX_PER_BLOCK = 1
     RPC_PORT = 9252
+    REORG_LIMIT = 1000
+
+class CanadaeCoin(AuxPowMixin, Coin):
+    NAME = "CanadaeCoin"
+    SHORTNAME = "CDN"
+    NET = "mainnet"
+    XPUB_VERBYTES = bytes.fromhex("0488b21e")
+    XPRV_VERBYTES = bytes.fromhex("0488ade4")
+    P2PKH_VERBYTE = bytes.fromhex("1C")
+    P2SH_VERBYTES = [bytes.fromhex("05")]
+    WIF_BYTE = bytes.fromhex("9c")
+    GENESIS_HASH = ('863626dadaef221e2e2f30ff3dacae44'
+                    'cabdae9e0028058072181b3fb675d94a')
+    ESTIMATE_FEE = 0.0001
+    RELAY_FEE = 0.0001
+    DAEMON = daemon.FakeEstimateFeeDaemon
+    TX_COUNT = 3455905
+    TX_COUNT_HEIGHT = 3645419
+    TX_PER_BLOCK = 1
+    IRC_PREFIX = "E_"
+    IRC_CHANNEL="#electrum-cdn"
+    RPC_PORT = 34330
     REORG_LIMIT = 1000
