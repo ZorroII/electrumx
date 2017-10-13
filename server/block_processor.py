@@ -93,28 +93,28 @@ class Prefetcher(LoggedClass):
                 cache_room = self.min_cache_size // self.ave_size
                 count = min(daemon_height - self.fetched_height, cache_room)
                 count = min(500, max(count, 0))
-                #比特币客户端一直在运行，此时count为比特币客户端求区块高度与electrumx记录区块高度的差
+                # 比特币客户端一直在运行，此时count为比特币客户端求区块高度与electrumx记录区块高度的差
                 if not count:
-                    #caught_up表示是否已经追上bitocind了
+                    # caught_up表示是否已经追上bitocind了
                     if not self.caught_up:
                         self.caught_up = True
-                        #如果caught_up,则flush一次并把caught_up设为False
+                        # 如果caught_up,则flush一次并把caught_up设为False
                         self.bp.on_prefetcher_first_caught_up()
                     return False
-                #如果存在高度差，读取这些高度的区块HASH(也就是前面就N个0的SHA256)
+                # 如果存在高度差，读取这些高度的区块HASH(也就是前面就N个0的SHA256)
                 first = self.fetched_height + 1
                 hex_hashes = await daemon.block_hex_hashes(first, count)
                 if self.caught_up:
                     self.logger.info('new block height {:,d} hash {}'
                                      .format(first + count-1, hex_hashes[-1]))
-                #根据hash获取区块内容
+                # 根据hash获取区块内容
                 blocks = await daemon.raw_blocks(hex_hashes)
 
                 assert count == len(blocks)
 
                 # Special handling for genesis block
                 if first == 0:
-                    #如果是第一个块。特殊处理创始块
+                    # 如果是第一个块。特殊处理创始块
                     blocks[0] = self.bp.coin.genesis_block(blocks[0])
                     self.logger.info('verified genesis block with hash {}'
                                      .format(hex_hashes[0]))
@@ -126,7 +126,7 @@ class Prefetcher(LoggedClass):
                 else:
                     self.ave_size = (size + (10 - count) * self.ave_size) // 10
 
-                #获取到足够的块数据后，这里调用bp里的check_and_advance_blocks处理
+                # 获取到足够的块数据后，这里调用bp里的check_and_advance_blocks处理
                 self.bp.on_prefetched_blocks(blocks, first)
                 self.cache_size += size
                 self.fetched_height += count
@@ -244,14 +244,14 @@ class BlockProcessor(server.db.DB):
                                 'expected {:,d}'.format(len(raw_blocks), first,
                                                         self.height + 1))
             return
-        #通过定义的反序列化器，反序列化不同币种的区块数据
+        # 通过定义的反序列化器，反序列化不同币种的区块数据
         blocks = [self.coin.block(raw_block, first + n)
                   for n, raw_block in enumerate(raw_blocks)]
         headers = [block.header for block in blocks]
         hprevs = [self.coin.header_prevhash(h) for h in headers]
         chain = [self.tip] + [self.coin.header_hash(h) for h in headers[:-1]]
-        #blocks的prevhash列表==上次最后一个block的hash+blocks的hash列表
-        #这里主要确认当前新获取到的链与之前获取到的最后一个区块是否有承接性
+        # blocks的prevhash列表==上次最后一个block的hash+blocks的hash列表
+        # 这里主要确认当前新获取到的链与之前获取到的最后一个区块是否有承接性
         if hprevs == chain:
             start = time.time()
             await self.controller.run_in_executor(self.advance_blocks, blocks)
@@ -499,7 +499,7 @@ class BlockProcessor(server.db.DB):
 
         It is already verified they correctly connect onto our tip.
         '''
-        #计算一个可以撤销操作的高度
+        # 计算一个可以撤销操作的高度
         min_height = self.min_undo_height(self.daemon.cached_height())
         height = self.height
 
@@ -512,7 +512,7 @@ class BlockProcessor(server.db.DB):
         headers = [block.header for block in blocks]
         self.height = height
         self.headers.extend(headers)
-        #记录最后一个block的hash，用于校验新收到区块链的连续性
+        # 记录最后一个block的hash，用于校验新收到区块链的连续性
         self.tip = self.coin.header_hash(headers[-1])
 
         # If caught up, flush everything as client queries are
@@ -558,7 +558,7 @@ class BlockProcessor(server.db.DB):
                 hashX = script_hashX(txout.pk_script)
                 if hashX:
                     add_hashX(hashX)
-                    #将新utxo放入utxo_cache,格式为:tx_hash+tx_idx->hashX+tx_num(4byte)+value(8bytes)
+                    # 将新utxo放入utxo_cache,格式为:tx_hash+tx_idx->hashX+tx_num(4byte)+value(8bytes)
                     put_utxo(tx_hash + s_pack('<H', idx),
                              hashX + tx_numb + s_pack('<Q', txout.value))
 
@@ -696,7 +696,7 @@ class BlockProcessor(server.db.DB):
     be searched and resolved if necessary with the tx_num.  The
     collision rate is low (<0.1%).
     '''
-    #数据库中只保存有效的utxo,方便查询,而非历史上所有的utxo，所以需要spend
+    # 数据库中只保存有效的utxo,方便查询,而非历史上所有的utxo，所以需要spend
     def spend_utxo(self, tx_hash, tx_idx):
         '''Spend a UTXO and return the 33-byte value.
 
@@ -716,8 +716,8 @@ class BlockProcessor(server.db.DB):
         # Key: b'h' + compressed_tx_hash + tx_idx + tx_num
         # Value: hashX
         prefix = b'h' + tx_hash[:4] + idx_packed
-        #leveldb中取出所有符合前缀的要求的hkey
-        #但是对于hkey来说，其实绝大多数情况下，该前缀列出的元素只有一个
+        # leveldb中取出所有符合前缀的要求的hkey
+        # 但是对于hkey来说，其实绝大多数情况下，该前缀列出的元素只有一个
         candidates = {db_key: hashX for db_key, hashX
                       in self.utxo_db.iterator(prefix=prefix)}
 
@@ -725,7 +725,7 @@ class BlockProcessor(server.db.DB):
             tx_num_packed = hdb_key[-4:]
 
             if len(candidates) > 1:
-                #如果列出的元素不止一个，则通过tx_num到tx_hash的map来排除
+                # 如果列出的元素不止一个，则通过tx_num到tx_hash的map来排除
                 tx_num, = unpack('<I', tx_num_packed)
                 hash, height = self.fs_tx_hash(tx_num)
                 if hash != tx_hash:
@@ -736,7 +736,7 @@ class BlockProcessor(server.db.DB):
             # Value: the UTXO value as a 64-bit unsigned integer
             udb_key = b'u' + hashX + hdb_key[-6:]
             utxo_value_packed = self.utxo_db.get(udb_key)
-            #这里取到的就是需要找的utxo了
+            # 这里取到的就是需要找的utxo了
             if utxo_value_packed:
                 # Remove both entries for this UTXO
                 self.db_deletes.append(hdb_key)

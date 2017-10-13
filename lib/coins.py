@@ -35,7 +35,7 @@ import re
 import struct
 from decimal import Decimal
 from hashlib import sha256
-
+import logging
 import lib.util as util
 from lib.hash import Base58, hash160, double_sha256, hash_to_str
 from lib.script import ScriptPubKey
@@ -908,6 +908,37 @@ class Bitbay(Coin):
         else:
             return cls.HEADER_HASH(header)
 
+
+class Hshare(Coin):
+    NAME = "Hshare"
+    SHORTNAME = "HSR"
+    NET = "mainnet"
+    P2PKH_VERBYTE = bytes.fromhex("28")
+    P2SH_VERBYTES = [bytes.fromhex("64")]
+    WIF_BYTE = bytes.fromhex("8c")
+    GENESIS_HASH = ('0002c75e4179fd8dc22391536af7e647'
+                    'bdd88b83d9ed57fcf09e5ae3d06cae78')
+    DESERIALIZER = DeserializerTxTime
+    DAEMON = daemon.LegacyRPCDaemon
+    TX_COUNT = 4594999
+    TX_COUNT_HEIGHT = 1667070
+    TX_PER_BLOCK = 3
+    IRC_PREFIX = "E_"
+    IRC_CHANNEL = "#electrum-hsr"
+    RPC_PORT = 11617
+    REORG_LIMIT = 5000
+    HEADER_HASH = None
+
+    @classmethod
+    def header_hash(cls, header):
+        '''Given a header return the hash.'''
+        import x13_hash
+        import x14_hash
+        version, = struct.unpack('<I', header[:4])
+        if version > 1:
+            return super().header_hash(header)
+        else:
+            return x13_hash.getPoWHash(header)
 
 
 class Peercoin(Coin):
