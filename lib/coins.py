@@ -933,7 +933,6 @@ class Hshare(Coin):
     def header_hash(cls, header):
         '''Given a header return the hash.'''
         import x13_hash
-        import x14_hash
         version, = struct.unpack('<I', header[:4])
         if version > 1:
             return super().header_hash(header)
