@@ -40,7 +40,7 @@ import lib.util as util
 from lib.hash import Base58, hash160, double_sha256, hash_to_str
 from lib.script import ScriptPubKey
 from lib.tx import Deserializer, DeserializerSegWit, DeserializerAuxPow, \
-    DeserializerZcash, DeserializerTxTime, DeserializerReddcoin
+    DeserializerZcash, DeserializerTxTime, DeserializerReddcoin, DeserializerQtum
 from server.block_processor import BlockProcessor
 import server.daemon as daemon
 from server.session import ElectrumX, DashElectrumX
@@ -432,6 +432,32 @@ class BitcoinNolnet(BitcoinCash):
     TX_PER_BLOCK = 50
     RPC_PORT = 28332
     PEER_DEFAULT_PORTS = {'t': '52001', 's': '52002'}
+
+
+class Qtum(Coin):
+    NAME = "Qtum"
+    NET = "mainnet"
+    SHORTNAME = "QTUM"
+    DESERIALIZER = DeserializerQtum
+    BASIC_HEADER_SIZE = 180
+    HEADER_SIZE = 252
+    XPUB_VERBYTES = bytes.fromhex("0488b21e")
+    XPRV_VERBYTES = bytes.fromhex("0488ade4")
+    P2PKH_VERBYTE = bytes.fromhex("3A")
+    P2SH_VERBYTES = [bytes.fromhex("32")]
+    WIF_BYTE = bytes.fromhex("80")
+    GENESIS_HASH = ('000075aef83cf2853580f8ae8ce6f8c3'
+                    '096cfa21d98334d6e3f95e5582ed986c')
+    RPC_PORT = 3889
+    TX_COUNT = 243631085
+    TX_COUNT_HEIGHT = 479636
+    TX_PER_BLOCK = 50
+
+    @classmethod
+    def block_header(cls, block, height):
+        '''Return the block header bytes'''
+        deserializer = cls.DESERIALIZER(block)
+        return deserializer.read_header(height, cls.BASIC_HEADER_SIZE)
 
 
 class Litecoin(Coin):

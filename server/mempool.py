@@ -301,7 +301,7 @@ class MemPool(util.LoggedClass):
         unconfirmed is True if any txin is unconfirmed.
         '''
         # hashXs is a defaultdict
-        #获取一个地址hashX在mempool中记录的交易
+        # 获取一个地址hashX在mempool中记录的交易
         if hashX not in self.hashXs:
             return []
 
