@@ -69,11 +69,13 @@ class DB(util.LoggedClass):
 
         self.logger.info('reorg limit is {:,d} blocks'
                          .format(self.env.reorg_limit))
-
+        #保存区块头信息，格式=header的前后相连
         self.headers_file = util.LogicalFile('meta/headers', 2, 16000000)
+        #记录区块的增量交易数量
         self.tx_counts_file = util.LogicalFile('meta/txcounts', 2, 2000000)
         self.hashes_file = util.LogicalFile('meta/hashes', 4, 16000000)
         if not self.coin.STATIC_BLOCK_HEADERS:
+            #保存区块头偏移信息(如果区块头长度不固定)，结构为数据前后相连，可以通过height直接计算位置
             self.headers_offsets_file = util.LogicalFile(
                 'meta/headers_offsets', 2, 16000000)
             # Write the offset of the genesis block
@@ -226,6 +228,7 @@ class DB(util.LoggedClass):
         '''Return a par (tx_hash, tx_height) for the given tx number.
 
         If the tx_height is not on disk, returns (None, tx_height).'''
+        #tx_counts里存放的height:累计交易数，二分法查找找到结果就是包含这个交易高度的区块高度
         tx_height = bisect_right(self.tx_counts, tx_num)
         if tx_height > self.db_height:
             tx_hash = None
@@ -294,8 +297,8 @@ class DB(util.LoggedClass):
         state = self.utxo_db.get(b'state')
         if not state:
             self.db_height = -1
-            self.db_tx_count = 0
-            self.db_tip = b'\0' * 32
+            self.db_tx_count = 0#这个主要用于校验tx_counts
+            self.db_tip = b'\0' * 32#初始化时对bp.tip赋值
             self.db_version = max(self.DB_VERSIONS)
             self.utxo_flush_count = 0
             self.wall_time = 0
@@ -328,10 +331,10 @@ class DB(util.LoggedClass):
         '''Write (UTXO) state to the batch.'''
         state = {
             'genesis': self.coin.GENESIS_HASH,
-            'height': self.db_height,
-            'tx_count': self.db_tx_count,
-            'tip': self.db_tip,
-            'utxo_flush_count': self.utxo_flush_count,
+            'height': self.db_height,#数据库中记录的区块高度
+            'tx_count': self.db_tx_count,#数据库中记录的交易总数量，即交易高度(tx_num)
+            'tip': self.db_tip,#数据库中记录的最高区块的headerhash
+            'utxo_flush_count': self.utxo_flush_count,#
             'wall_time': self.wall_time,
             'first_sync': self.first_sync,
             'db_version': self.db_version,
@@ -363,7 +366,7 @@ class DB(util.LoggedClass):
 
     def db_utxo_lookup(self, tx_hash, tx_idx):
         '''Given a prevout return a (hashX, value) pair.
-
+        #给个txin，找出对应的txoutput
         Raises MissingUTXOError if the UTXO is not found.  Used by the
         mempool code.
         '''

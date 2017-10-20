@@ -216,6 +216,8 @@ class Coin(object):
 
         Pass the address (either P2PKH or P2SH) in base58 form.
         '''
+        #比特币地址格式为base58(version(1byte)+hash(20bytes)+checksum(4bytes))
+        #这里decode_check会对比特币地址解码后，校验最后四字节，然后去掉四字节，返回21字节的地址数据
         raw = Base58.decode_check(address)
 
         # Require version byte(s) plus hash160.

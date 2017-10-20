@@ -755,6 +755,7 @@ class JSONSession(JSONSessionBase, asyncio.Protocol):
 
     def __init__(self, version=JSONRPCCompat):
         super().__init__(version=version)
+        #在connection_made中
         self.transport = None
         self.write_buffer_high = 500000
 

@@ -102,7 +102,8 @@ class SessionBase(JSONSession):
 
 class ElectrumX(SessionBase):
     '''A TCP server that handles incoming Electrum connections.'''
-
+    #维护单个链接(用户)的类，主要负责接收用户订阅的脚本，地址变动，帮助用户广播交易
+    #以及在发生变动时通知用户
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.subscribe_headers = False
@@ -110,7 +111,9 @@ class ElectrumX(SessionBase):
         self.notified_height = None
         self.max_send = self.env.max_send
         self.max_subs = self.env.max_session_subs
+        #session订阅的hashX,即11个字节的hashX (sha(p2sh/p2pkh)[0:11])->address(包含四个字节校验位的base58格式地址)
         self.hashX_subs = {}
+
         self.mempool_statuses = {}
         self.chunk_indices = []
         self.protocol_version = None
@@ -124,18 +127,24 @@ class ElectrumX(SessionBase):
 
         Cache is a shared cache for this update.
         '''
+        #通知该session的客户端区块链更新
+        #1 第一次更新怎么同步所有数据
+        #2 touched为本轮变化了的交易，变化有两种，1是刚出现的输入合理的交易，2是刚入块，被从mempool中删除的交易
+        #交易的txin对应的地址和txout的地址都会写入到touched里
         pairs = []
         changed = []
-
+        #取得变化地址中被订阅的地址
         matches = touched.intersection(self.hashX_subs)
+        #检查地址交易变化包括数量，确认次数
         for hashX in matches:
             alias = self.hashX_subs[hashX]
             status = await self.address_status(hashX)
             changed.append((alias, status))
-
+        #如果订阅了高度变化通知，通知其高度发生变化
         if height != self.notified_height:
             self.notified_height = height
             if self.subscribe_headers:
+                #这里只通知最高的一个区块的头部??
                 args = (self.controller.electrum_header(height), )
                 pairs.append(('blockchain.headers.subscribe', args))
 
@@ -144,6 +153,8 @@ class ElectrumX(SessionBase):
 
             # Check mempool hashXs - the status is a function of the
             # confirmed state of other transactions
+            # 这里计算出被订阅，在mempool中，但是又未touched的交易，看看状态是否有变化
+            # 话说这里为什么要检查这些交易??
             for hashX in set(self.mempool_statuses).difference(matches):
                 old_status = self.mempool_statuses[hashX]
                 status = await self.address_status(hashX)
@@ -152,6 +163,7 @@ class ElectrumX(SessionBase):
                     changed.append((alias, status))
 
         for alias_status in changed:
+            #script hash是32字节的，hex=64字节
             if len(alias_status[0]) == 64:
                 method = 'blockchain.scripthash.subscribe'
             else:
@@ -238,7 +250,7 @@ class ElectrumX(SessionBase):
 
     async def scripthash_subscribe(self, scripthash):
         '''Subscribe to a script hash.
-
+        #下面这句话，这里的scripthash不是p2sh里的scripthash，而是sha256(script)=32字节的hash
         scripthash: the SHA256 hash of the script to subscribe to'''
         hashX = self.controller.scripthash_to_hashX(scripthash)
         return await self.hashX_subscribe(hashX, scripthash)

@@ -526,6 +526,7 @@ class BlockProcessor(server.db.DB):
                 self.next_cache_check = time.time() + 30
 
     def advance_txs(self, txs):
+        #block.transactions内容为[tx内容，txhash(即两次sha256(tx内容的数据))]
         self.tx_hashes.append(b''.join(tx_hash for tx, tx_hash in txs))
 
         # Use local vars for speed in the loops
@@ -558,7 +559,7 @@ class BlockProcessor(server.db.DB):
                 hashX = script_hashX(txout.pk_script)
                 if hashX:
                     add_hashX(hashX)
-                    # 将新utxo放入utxo_cache,格式为:tx_hash+tx_idx->hashX+tx_num(4byte)+value(8bytes)
+                    #将新utxo放入utxo_cache,格式为:tx_hash+idx->hashX+tx_num(4byte)+value(8bytes)
                     put_utxo(tx_hash + s_pack('<H', idx),
                              hashX + tx_numb + s_pack('<Q', txout.value))
 

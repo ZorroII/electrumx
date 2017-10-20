@@ -24,7 +24,9 @@ class MemPool(util.LoggedClass):
     response to the value() and transactions() calls.
     
     tx_hash=交易id，即sha256(sha256(交易内容))
-    hashX=交易脚本，即交易地址
+    !!hashX=sha256(交易脚本)[0:11]，
+    对于比特币区块数据而言，txout中存放的为交易脚本，hashX为P2SH或者是P2PKH的sha256的一部分，如果是P2PK，则转换成P2PKH再sha256
+    对于比特币地址而言，hashX需要根据地址类型，组装成p2sh或p2pkh后，再sha256
     To that end we maintain the following maps:
        tx_hash -> (txin_pairs, txout_pairs)
        hashX   -> set of all tx hashes in which the hashX appears
@@ -198,6 +200,9 @@ class MemPool(util.LoggedClass):
 
     def processing_new_block(self):
         '''Return True if we're processing a new block.'''
+        #如果新区块处理完，cached_height应该等于db_height,因为
+        # db_height处理完后被赋值为cached_height而最新的height
+        # 还没有被从bitcoind同步过来
         return self.daemon.cached_height() > self.db.db_height
 
     async def fetch_raw_txs(self, hex_hashes):
